@@ -178,7 +178,8 @@ async function recognizeHealthPhoto(event){
     const output=await worker.recognize(file);
     const recognized=output?.data?.text||'';
     pendingHealthOcrFields=parseHealthOcrText(recognized);
-    document.getElementById('healthOcrFields').textContent=pendingHealthOcrFields.length?pendingHealthOcrFields.map(x=>x.label+'：'+x.value).join('\n'):'未识别到可回填的体重、腰围或血压。你仍可查看下方完整识别文字。';
+    if(recognized.trim())pendingHealthOcrFields.push({key:'notes',label:'识别全文附加到当日备注（'+recognized.trim().length+'字）',value:recognized.trim(),append:true});
+    document.getElementById('healthOcrFields').textContent=pendingHealthOcrFields.length?pendingHealthOcrFields.map(x=>x.append?x.label:x.label+'：'+x.value).join('\n'):'未识别到可回填的体重、腰围或血压。你仍可查看下方完整识别文字。';
     document.getElementById('healthOcrText').textContent=recognized||'（没有识别出文字）';
     document.getElementById('applyHealthOcr').disabled=!pendingHealthOcrFields.length;
     result.classList.remove('hide');
@@ -193,7 +194,7 @@ function applyHealthOcrFields(){
   if(!pendingHealthOcrFields.length)return;
   for(const item of pendingHealthOcrFields){
     const field=document.querySelector('#page-record [data-k="'+item.key+'"]');
-    if(field){field.value=String(item.value);field.dispatchEvent(new Event('input',{bubbles:true}));}
+    if(field){field.value=item.append&&field.value.trim()?field.value.trim()+'\n\n【图片识别】\n'+item.value:item.append?'【图片识别】\n'+item.value:String(item.value);field.dispatchEvent(new Event('input',{bubbles:true}));}
   }
   clearTimeout(saveTimer);saveRecord(false);showToast('识别数据已回填并保存，请再核对表单');
 }
