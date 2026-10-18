@@ -39,6 +39,9 @@
 <div class="section-label"><h2>健康提醒</h2></div><div class="note">本工具用于记录健康习惯，不替代医生评估和治疗。进食时间与运动安排请按自身情况调整。</div>
 </section>
 <section class="page" id="page-record"><div class="record-header"><div><p class="top-eyebrow">DAILY JOURNAL</p><h1 class="page-title">每天的健康记录</h1><p class="page-desc" style="margin-bottom:0">均为选填，填写后自动保存在当前浏览器。</p></div><div class="date-nav"><button class="button outline small" onclick="shiftDate(-1)" aria-label="前一天">‹</button><input id="recordDate" type="date" class="date-input" aria-label="记录日期"/><button class="button outline small" onclick="shiftDate(1)" aria-label="后一天">›</button></div></div>
+
+<div class="card wide"><h2 class="card-title">📷 上传图片自动识别</h2><p class="card-subtitle">选择体检报告或测量结果照片，本机识别后可回填体重、腰围和血压。图片不会上传；首次识别需联网下载 OCR 程序和中文模型。识别结果请先核对。</p><div class="actions-row"><label class="button outline" for="healthPhoto">选择或拍摄图片</label><input id="healthPhoto" type="file" accept="image/*" class="hide" onchange="recognizeHealthPhoto(event)"/></div><p id="healthOcrStatus" class="save-status" aria-live="polite">支持照片中的“体重”“腰围”“血压 120/80”等带标签读数。</p><div id="healthOcrResult" class="hide"><p><strong>识别到的候选值（回填前可核对）</strong></p><pre id="healthOcrFields" class="archive-report"></pre><button id="applyHealthOcr" class="button light" type="button" onclick="applyHealthOcrFields()">填入当日记录</button><details style="margin-top:12px"><summary>查看完整识别文字</summary><pre id="healthOcrText" class="archive-report"></pre></details></div></div>
+
 <div class="record-grid">
 <div class="card"><h2 class="card-title">⚖ 体重和身体状态</h2><div class="form-grid"><div class="field"><label for="r-weight">晨起空腹体重（kg）</label><input type="number" id="r-weight" data-k="weight" min="20" max="300" step="0.05" placeholder="填写实际体重" inputmode="decimal"/></div><div class="field"><label for="r-waist">腰围（cm，可选）</label><input type="number" id="r-waist" data-k="waist" min="40" max="200" step="0.5" placeholder="填写实际腰围" inputmode="decimal"/></div><div class="field"><label for="r-water">今天饮水（ml）</label><input type="number" id="r-water" data-k="water" min="0" max="12000" step="50" placeholder="例如 2000" inputmode="numeric"/></div><div class="field"><label for="r-sleep">昨晚睡眠（小时）</label><input type="number" id="r-sleep" data-k="sleep" min="0" max="24" step="0.5" placeholder="例如 7.5" inputmode="decimal"/></div></div></div>
 <div class="card"><h2 class="card-title">♡ 家庭血压（mmHg）</h2><p class="card-subtitle">先坐位安静休息5分钟，每次测2遍、间隔1分钟；保留真实测量值。</p><div class="bp-group"><div class="bp-top"><strong>☀ 早晨</strong><select id="r-am-arm" data-k="amArm" aria-label="早晨测量手臂"><option value="左臂">左臂</option><option value="右臂">右臂</option></select></div><div class="bp-row"><small>第1次</small><input type="number" data-k="amSys1" min="50" max="270" inputmode="numeric" placeholder="收缩压" aria-label="早晨第一次收缩压"/><input type="number" data-k="amDia1" min="30" max="160" inputmode="numeric" placeholder="舒张压" aria-label="早晨第一次舒张压"/></div><div class="bp-row"><small>第2次</small><input type="number" data-k="amSys2" min="50" max="270" inputmode="numeric" placeholder="收缩压" aria-label="早晨第二次收缩压"/><input type="number" data-k="amDia2" min="30" max="160" inputmode="numeric" placeholder="舒张压" aria-label="早晨第二次舒张压"/></div></div><div class="bp-group"><div class="bp-top"><strong>☾ 晚上</strong><select id="r-pm-arm" data-k="pmArm" aria-label="晚上测量手臂"><option value="左臂">左臂</option><option value="右臂">右臂</option></select></div><div class="bp-row"><small>第1次</small><input type="number" data-k="pmSys1" min="50" max="270" inputmode="numeric" placeholder="收缩压" aria-label="晚上第一次收缩压"/><input type="number" data-k="pmDia1" min="30" max="160" inputmode="numeric" placeholder="舒张压" aria-label="晚上第一次舒张压"/></div><div class="bp-row"><small>第2次</small><input type="number" data-k="pmSys2" min="50" max="270" inputmode="numeric" placeholder="收缩压" aria-label="晚上第二次收缩压"/><input type="number" data-k="pmDia2" min="30" max="160" inputmode="numeric" placeholder="舒张压" aria-label="晚上第二次舒张压"/></div></div><div id="bpWarning" class="note hide" style="margin-top:11px"></div></div>
@@ -123,6 +126,77 @@ function download(content,name,mime){const blob=new Blob([content],{type:mime}),
 function exportJSON(){download(JSON.stringify({version:1,exportedAt:new Date().toISOString(),settings:app.settings,records:app.records,profile:app.profile},null,2),`轻盈计划-完整备份-${localDay()}.json`,'application/json');showToast('已生成JSON备份，请妥善保存')}
 function csvCell(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
 function exportCSV(){const fields=['日期','体重kg','腰围cm','饮水ml','睡眠小时','早1收缩','早1舒张','早2收缩','早2舒张','晚1收缩','晚1舒张','晚2收缩','晚2舒张','早测手臂','晚测手臂','早餐完成','早餐内容','午餐完成','午餐内容','下午提前主餐完成','下午提前主餐内容','热量kcal','饥饿感','快走分钟','跑走分钟','力量分钟','步数','运动感受','备注'];const keys=['date','weight','waist','water','sleep','amSys1','amDia1','amSys2','amDia2','pmSys1','pmDia1','pmSys2','pmDia2','amArm','pmArm','lunchDone','lunchText','snackDone','snackText','dinnerDone','dinnerText','calories','hunger','walk','run','strength','steps','exerciseFeeling','notes'];const rows=allRecords().map(([date,r])=>keys.map(k=>csvCell(k==='date'?date:typeof r[k]==='boolean'?(r[k]?'是':'否'):r[k])).join(','));download('\ufeff'+[fields.map(csvCell).join(','),...rows].join('\r\n'),`轻盈计划-记录-${localDay()}.csv`,'text/csv;charset=utf-8');showToast('已生成CSV表格')}
+
+let pendingHealthOcrFields=[];
+let healthOcrLibraryPromise=null;
+function parseHealthOcrText(raw){
+  const text=String(raw||'').replace(/[：﹕]/g,':').replace(/[，]/g,',');
+  const found=[];
+  const add=(key,label,value,min,max)=>{
+    const number=Number(value);
+    if(Number.isFinite(number)&&number>=min&&number<=max&&!found.some(x=>x.key===key))found.push({key,label,value:number});
+  };
+  let m=text.match(/(?:体重|重量|weight)\\s*[:：]?\\s*(\\d{2,3}(?:\\.\\d{1,2})?)\\s*(?:kg|公斤|千克)?/i);
+  if(m)add('weight','体重（kg）',m[1],20,300);
+  m=text.match(/(?:腰围|腰圍|waist)\\s*[:：]?\\s*(\\d{2,3}(?:\\.\\d)?)\\s*(?:cm|厘米)?/i);
+  if(m)add('waist','腰围（cm）',m[1],40,200);
+  m=text.match(/(?:血压|血壓|blood\\s*pressure|\\bBP\\b)\\s*[:：]?\\s*(\\d{2,3})\\s*[\\/／-]\\s*(\\d{2,3})/i);
+  if(m){add('amSys1','血压收缩压（mmHg）',m[1],50,270);add('amDia1','血压舒张压（mmHg）',m[2],30,160);}
+  if(!found.some(x=>x.key==='amSys1')){
+    const sys=text.match(/(?:收缩压|收縮壓|systolic)\\s*[:：]?\\s*(\\d{2,3})/i);
+    const dia=text.match(/(?:舒张压|舒張壓|diastolic)\\s*[:：]?\\s*(\\d{2,3})/i);
+    if(sys&&dia){add('amSys1','血压收缩压（mmHg）',sys[1],50,270);add('amDia1','血压舒张压（mmHg）',dia[1],30,160);}
+  }
+  return found;
+}
+function loadHealthOcrLibrary(){
+  if(window.Tesseract)return Promise.resolve(window.Tesseract);
+  if(!healthOcrLibraryPromise)healthOcrLibraryPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    script.onload=()=>window.Tesseract?resolve(window.Tesseract):reject(Error('OCR程序未能启动'));
+    script.onerror=()=>reject(Error('无法下载OCR程序，请检查网络后重试'));
+    document.head.appendChild(script);
+  });
+  return healthOcrLibraryPromise;
+}
+async function recognizeHealthPhoto(event){
+  const file=event?.target?.files?.[0]||document.getElementById('healthPhoto').files?.[0];
+  if(!file)return;
+  const status=document.getElementById('healthOcrStatus'),result=document.getElementById('healthOcrResult');
+  result.classList.add('hide');pendingHealthOcrFields=[];
+  if(!file.type.startsWith('image/')){status.textContent='请选择 JPG、PNG 或其他图片文件。';return}
+  let worker;
+  try{
+    status.textContent='正在准备中文识别程序；首次使用会下载识别模型，请保持联网…';
+    const Tesseract=await loadHealthOcrLibrary();
+    worker=await Tesseract.createWorker('chi_sim+eng',1,{logger:m=>{
+      if(m.status==='loading language traineddata')status.textContent='正在下载中文识别模型…';
+      else if(m.status==='recognizing text'&&m.progress)status.textContent='正在识别图片… '+Math.round(m.progress*100)+'%';
+    }});
+    status.textContent='正在本机识别图片…';
+    const output=await worker.recognize(file);
+    const recognized=output?.data?.text||'';
+    pendingHealthOcrFields=parseHealthOcrText(recognized);
+    document.getElementById('healthOcrFields').textContent=pendingHealthOcrFields.length?pendingHealthOcrFields.map(x=>x.label+'：'+x.value).join('\n'):'未识别到可回填的体重、腰围或血压。你仍可查看下方完整识别文字。';
+    document.getElementById('healthOcrText').textContent=recognized||'（没有识别出文字）';
+    document.getElementById('applyHealthOcr').disabled=!pendingHealthOcrFields.length;
+    result.classList.remove('hide');
+    status.textContent=pendingHealthOcrFields.length?'识别完成，请核对候选值后再回填。':'识别完成，但没有匹配到支持的项目；可查看识别文字。';
+  }catch(error){
+    status.textContent='识别失败：'+(error?.message||'请换一张清晰、正向的照片后重试。');
+  }finally{
+    if(worker)try{await worker.terminate()}catch{}
+  }
+}
+function applyHealthOcrFields(){
+  if(!pendingHealthOcrFields.length)return;
+  for(const item of pendingHealthOcrFields){
+    const field=document.querySelector('#page-record [data-k="'+item.key+'"]');
+    if(field){field.value=String(item.value);field.dispatchEvent(new Event('input',{bubbles:true}));}
+  }
+  clearTimeout(saveTimer);saveRecord(false);showToast('识别数据已回填并保存，请再核对表单');
+}
 async function importJSON(e){const file=e.target.files[0];if(!file)return;try{const obj=JSON.parse(await file.text());if(!obj||!obj.settings||typeof obj.settings!=='object'||!obj.records||typeof obj.records!=='object'||Array.isArray(obj.records)||Object.keys(obj.records).some(k=>!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(k))){throw Error('备份格式不正确')}if(Object.keys(obj.records).length>30000)throw Error('记录数量过多');if(!confirm('将把私人档案、计划参数和日常记录保存到本机此浏览器。不会上传资料。继续吗？'))return;app={settings:{...BASE,...obj.settings},records:obj.records,profile:obj.profile||app.profile||null};if(!store())throw Error('浏览器保存失败');go('settings');showToast(`已恢复${Object.keys(app.records).length}天记录及私人档案`)}catch(err){showToast('无法恢复：'+err.message)}finally{e.target.value=''}}
 function resetAll(){if(!confirm('确定清除所有本地健康记录及设置？建议先导出备份。'))return;if(!confirm('再次确认：清除后无法撤销（除非已有JSON备份）。'))return;app={settings:{...BASE},records:{},profile:null};store();recordDate=localDay();go('settings');showToast('已重置本地数据')}
 function setEarlyMeal(text){
