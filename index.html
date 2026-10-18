@@ -136,15 +136,15 @@ function parseHealthOcrText(raw){
     const number=Number(value);
     if(Number.isFinite(number)&&number>=min&&number<=max&&!found.some(x=>x.key===key))found.push({key,label,value:number});
   };
-  let m=text.match(/(?:体重|重量|weight)\\s*[:：]?\\s*(\\d{2,3}(?:\\.\\d{1,2})?)\\s*(?:kg|公斤|千克)?/i);
+  let m=text.match(/(?:体重|重量|weight)\s*[:：]?\s*(\d{2,3}(?:\.\d{1,2})?)\s*(?:kg|公斤|千克)?/i);
   if(m)add('weight','体重（kg）',m[1],20,300);
-  m=text.match(/(?:腰围|腰圍|waist)\\s*[:：]?\\s*(\\d{2,3}(?:\\.\\d)?)\\s*(?:cm|厘米)?/i);
+  m=text.match(/(?:腰围|腰圍|waist)\s*[:：]?\s*(\d{2,3}(?:\.\d)?)\s*(?:cm|厘米)?/i);
   if(m)add('waist','腰围（cm）',m[1],40,200);
-  m=text.match(/(?:血压|血壓|blood\\s*pressure|\\bBP\\b)\\s*[:：]?\\s*(\\d{2,3})\\s*[\\/／-]\\s*(\\d{2,3})/i);
+  m=text.match(/(?:血压|血壓|blood\s*pressure|\bBP\b)\s*[:：]?\s*(\d{2,3})\s*[\/／-]\s*(\d{2,3})/i);
   if(m){add('amSys1','血压收缩压（mmHg）',m[1],50,270);add('amDia1','血压舒张压（mmHg）',m[2],30,160);}
   if(!found.some(x=>x.key==='amSys1')){
-    const sys=text.match(/(?:收缩压|收縮壓|systolic)\\s*[:：]?\\s*(\\d{2,3})/i);
-    const dia=text.match(/(?:舒张压|舒張壓|diastolic)\\s*[:：]?\\s*(\\d{2,3})/i);
+    const sys=text.match(/(?:收缩压|收縮壓|systolic)\s*[:：]?\s*(\d{2,3})/i);
+    const dia=text.match(/(?:舒张压|舒張壓|diastolic)\s*[:：]?\s*(\d{2,3})/i);
     if(sys&&dia){add('amSys1','血压收缩压（mmHg）',sys[1],50,270);add('amDia1','血压舒张压（mmHg）',dia[1],30,160);}
   }
   return found;
